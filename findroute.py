@@ -1,8 +1,6 @@
 from TdP_collections.graphs.graph import Graph
 
 from TdP_collections.priority_queue.adaptable_heap_priority_queue import AdaptableHeapPriorityQueue
-from TdP_collections.list.positional_list import PositionalList
-from circular_positional_list import CircularPositionalList
 #Progettare una funzione find_route() che, preso in input l’orario della compagnia, gli areoporti a e b, ed un orario di partenza t,
 # trova la rotta che permette di arrivare da a a b nel minor tempo possibile, partendo ad un orario non precedente a t.
 # (Come per l’esercizio precedente, bisogna tener conto del tempo minimo di coincidenza di
@@ -65,21 +63,32 @@ def shortest_path_lengths(g, src,t):
             v = e.opposite(u)
             if v not in cloud:
                 # perform relaxation step on edge (u,v)
-                #Il tempo per andare da A a B è il tempo di volo + il tempo che è necessario attendere in A
-                wgt = e.element() + u.get_tc()
-                print("Orario arrivo in " + str(u) + ": " + str(d[u][1]))
-                print("Orario partenza da "+str(u)+": "+str(e.get_orario_partenza()))
-                print("Orario arrivo + coincidenza:"+str(d[u][1]+ u.get_tc()))
-                #per partire da un aeroporto l'orario di partenza deve essere maggiore dell'orario in cui siamo arrivati
-                #+ il tempo di coincidenza
-                if d[u][0] + wgt < d[v][0] and e.get_orario_partenza() > d[u][1] + u.get_tc():  # better path to v?
+                #Il tempo per andare da A a B è il tempo di volo + il tempo che è necessario attendere in A + la differenza
+                #tra l'orario di partenza da A e quello di arrivo in A. In questo modo, a parità di tempo di viaggio e
+                #tempo di coincidenza si sceglie il volo che parte prima.
 
-                    d[v][0] = d[u][0] + wgt  # update the distance
+                tempoAttesa = d[u][1] if u is src else d[u][1] + u.get_tc()
+                #if e.get_orario_partenza() >= d[u][1] + u.get_tc():
+                if e.get_orario_partenza() >= tempoAttesa:
+                    #wgt = e.element() + u.get_tc()
+                    #wgt = e.element() + e.get_orario_partenza() - u.get_tc()
+                    #wgt = e.element() + e.get_orario_partenza() - d[u][1] + u.get_tc()
+                    wgt = e.element() + e.get_orario_partenza() - d[u][1]
 
-                    precedente[v] = u
-                    #si aggiorna l'orario di arrivo
-                    d[v][1] = e.get_orario_arrivo()
-                    pq.update(pqlocator[v], d[v][0], v)  # update the pq entry
+                    print("Orario arrivo in " + str(u) + ": " + str(d[u][1]))
+                    print("Orario partenza da "+str(u)+": "+str(e.get_orario_partenza()))
+                    print("Orario arrivo + coincidenza:"+str(d[u][1] + u.get_tc()))
+                    #per partire da un aeroporto l'orario di partenza deve essere maggiore dell'orario in cui siamo arrivati
+                    #+ il tempo di coincidenza
+                    #if d[u][0] + wgt < d[v][0] and e.get_orario_partenza() >= d[u][1] + u.get_tc():  # better path to v?
+                    if d[u][0] + wgt < d[v][0]:
+
+                        d[v][0] = d[u][0] + wgt  # update the distance
+                        precedente[v] = u
+                        #si aggiorna l'orario di arrivo
+                        d[v][1] = e.get_orario_arrivo()
+                        pq.update(pqlocator[v], d[v][0], v)  # update the pq entry
+
 
     return cloud, precedente # only includes reachable vertices
 
@@ -106,7 +115,7 @@ def shortest_path_tree(g, s, dest, d):
     return tree
 
 def shortest_path(dest, precedente):
-    """Si calcola il percorso minimo tra verso la destinazione"""
+    """Si calcola il percorso minimo dalla destinazione alla sorgente"""
     #controlli opportuni su src, dest e g
 
     path = []
@@ -187,14 +196,32 @@ def testFindRoute():
     g.insert_edge(a, b, 8.0, 10.0, 1)
     g.insert_edge(b, c, 13.0, 14.0, 1)
     g.insert_edge(c, d, 17.5, 19.0, 1)
-    g.insert_edge(d, e, 19.0, 22.0, 1)
+    g.insert_edge(e, d, 19.0, 22.0, 1)
     g.insert_edge(b, e, 13.0, 15.0, 1)
     #find_route(g, a, b, 9.0)
     #f non è raggiungibile
 
-    find_route(g, a, f, 5.0)
-    print("_________________________")
     find_route(g, a, d, 5.0)
+    #print("_________________________")
+    #find_route(g, a, d, 5.0)
+
+    jfk = g.insert_vertex("JFK", 2)
+    bos = g.insert_vertex("BOS", 5)
+    ord = g.insert_vertex("ORD", 8)
+    dfw = g.insert_vertex("DFW", 3)
+    mia = g.insert_vertex("MIA", 10)
+
+    g.insert_edge(jfk, bos, 10, 30, 5)
+    g.insert_edge(bos, ord, 50, 60, 5)
+    g.insert_edge(jfk, ord, 60, 70, 5)
+    g.insert_edge(bos, mia, 55, 75, 5)
+    g.insert_edge(bos, jfk, 35, 50, 5)
+    g.insert_edge(ord, dfw, 68, 80, 5)
+    g.insert_edge(dfw, bos, 80, 90, 5)
+    g.insert_edge(ord, mia, 67, 87, 5)
+    g.insert_edge(mia, jfk, 82, 99, 5)
+
+    find_route(g, jfk, bos, 10)
 
 
 if __name__ == "__main__":
